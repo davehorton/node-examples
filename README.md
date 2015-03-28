@@ -356,10 +356,11 @@ router.get('/users?*',
     passport.authenticate('bearer', { session: false }), //middleware - api requires authentication
     function (req, res, next) {
     
-      User.find(req.query, function (err, users) {
-        if (err) return next(err);
-        res.json( users ); 
-      });
+        // if we get here, the request was authenticated
+        User.find(req.query, function (err, users) {
+            if (err) return next(err);
+            res.json( users ); 
+        });
 });
 ```
 Note the difference from our earlier routes.  After we provide the uri pattern to match, we provide a middleware function that will be called before our route logic.  We tell passport to protect our endpoint by authenticating using the Bearer method.  This is what will call our authentication middleware, and if the token is not valid a 401 Unauthorized will be returned and our API endpoint logic will not be called.
