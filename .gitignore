@@ -1,4 +1,8 @@
 recordings/transcoded
+benchmarks/generate_post_data
+benchmarks/post_data.txt
+benchmarks/end.txt
+
 
 # Logs
 logs

@@ -244,7 +244,7 @@ router.post('/user/:id/greeting', function( req, res, next){
 ```
 Before we try it out, notice a couple of things:
 
-+ We're handling a multi-part body in a POST request.  The POST body has been nicely parsed for us into a javascript object that represents the data provided in the provided form variables (remember: the POST request contained the data in url-encoded strings, but we get to access them easily as properties in the 'req.body' object).  We got that done for us for free by the 'multer' middleware we included in the main app.js file.
++ We're handling a multi-part body in a POST request.  The POST body has been nicely parsed for us into a javascript object that represents the data provided in the provided form variables (remember: the POST request contained the data in url-encoded strings, but we get to access them easily as properties in the 'req.body' object).  We got that done for us for free by the [multer](https://github.com/expressjs/multer) middleware we included in the main app.js file.
 
 + The uploaded file has been automatically saved in a temp directory and made available to us with information including the original filename and so forth.
 
@@ -395,6 +395,53 @@ Connection: keep-alive
 
 It worked!
 
+## Benchmarks
+
+Let's see how our greeting upload REST API does with a little load thrown at it.  For this test, we'll use a shorter 10-second greeting prompt that we want to upload, transcode, and store.  Let's see how fast nodejs/express handle a single POST first:
+
+```js
+ curl -F "name=primary_greeting" -F "greeting=@/Users/dhorton/beachdog-enterprises/beachdog-networks/git/node-examples/recordings/conf_welcome.wav" http://localhost:3000/user/55188d0de8c91bf87f02d998/greeting
+
+{"__v":0,"name":"primary_greeting","folder_location":"/Users/dhorton/beachdog-enterprises/beachdog-networks/git/node-examples/recordings/transcoded/conf_welcome-20150329235345344.gsm","_id":"55189089b7d19fca88fe5bc6","date_created":"2015-03-29T23:53:45.344Z"}
+```
+
+Looking in our other terminal window, we can see that it took 52 milliseconds.  Again, much of that time would be the transcoding operation that is taking place outside of nodejs.
+```js
+POST /user/55188d0de8c91bf87f02d998/greeting 200 52.970 ms - 259
+```
+
+The 52 ms seems reasonable, given the fact we have a transcoding operation taking up much of that.  But what happens when we throw multiple transactions at the server at the same time -- do response times rapidly increase, or are we able to hold in that neighborhood for some level of requests per second.
+
+To find out, kill the 'node' process that is running (if any), change into the 'benchmarking' folder, and run the 'make' command.  This will use apache benchmark to throw 1,000 greeting upload requests at the server from 4 client threads simultaneously.  It will be uploading the same 10-second conference greeting that we just tested with.
+
+> Note: each time the benchmark runs it drops the existing data from the User and Greeting collections before running the test in order to have a clean start. If you added test data beforehand, it will be gone after running the benchmarks.
+
+```js
+cd benchmarks/
+make
+```
+
+The benchmark will run and then print out the results.  On my MacBook Pro, we got the following:
+```js
+Time taken for tests:   10.480 seconds
+Complete requests:      1000
+Failed requests:        0
+Requests per second:    95.42 [#/sec] (mean)
+Time per request:       52.402 [ms] (mean)
+
+Percentage of the requests served within a certain time (ms)
+  50%     51
+  66%     53
+  75%     55
+  80%     56
+  90%     61
+  95%     66
+  98%     76
+  99%     85
+ 100%    126 (longest request)
+ ```
+Looks good! -- the mean response time was 51.55 ms; no appreciable change from a single request. We handled 95 requests per second, and the scatter chart showing the variations in response times is not large -- 95% of all responses received in 66 ms or less.
+
 ## For more information
 
 + [nodejs](https://nodejs.org/api/)
@@ -402,4 +449,4 @@ It worked!
 + [async](https://github.com/caolan/async)
 + [mongoose](http://mongoosejs.com/)
 + [expressjs Router tutorial](https://scotch.io/tutorials/learn-to-use-the-new-router-in-expressjs-4)
-+ [multer](https://github.com/expressjs/multer) multipart/form-data handling
++ [multer multipart/form-data handling](https://github.com/expressjs/multer)

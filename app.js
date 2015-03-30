@@ -39,6 +39,7 @@ app.use(function (req, res, next) {
 
 
 app.use(function (err, req, res, next) {
+    console.error('Error: ', err) ;
     res.send(err.status || 500);
 });
 
